@@ -2,8 +2,10 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <dirent.h> 
-#include <sys/stat.h> 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <glob.h>
 #include <cstring>
 
 // 获取文件名的扩展名
@@ -16,52 +18,52 @@ std::string getFileExtension(const std::string& filename)
     return "";
 }
 
+std::vector<std::string> getFiles(std::string directoryPath, std::string extensionName)
+{
+    std::vector<std::string> fileList;
+    fileList.clear();
+    auto lastChar = directoryPath.at(directoryPath.length() - 1);
+    glob_t glob_result;
+    std::string patternStr = (lastChar == '/' ? directoryPath : (directoryPath + "/")) + "*" + extensionName;
+    std::cout << "patternStr:" << patternStr << std::endl;
+    glob(patternStr.c_str(), 0, nullptr, &glob_result);
+    for (size_t i = 0; i < glob_result.gl_pathc; i++) {
+        fileList.push_back(glob_result.gl_pathv[i]);
+    }
+    globfree(&glob_result);
+    return fileList;
+}
+
 // 修改文件名
 void renameFiles(const std::string& directoryPath)
 {
-    DIR* dir = opendir(directoryPath.c_str());
-    if (dir == nullptr) {
-        std::cerr << "Error opening directory" << std::endl;
-        return;
-    }
-
-    struct dirent* entry;
-    std::vector<std::string> filenames;
-
-    // 遍历目录获取文件名
-    while ((entry = readdir(dir)) != nullptr)
+    struct stat fileInfo;
+    if (fileInfo.st_mode & EISDIR)
     {
-        if (entry->d_type == DT_REG)
-        { // 只处理普通文件
-            std::string filename = entry->d_name;
-            std::string extension = getFileExtension(filename);
-            if (extension == ".stp" || extension == ".STP")
-            { 
-                // 找到目标扩展名文件
-                filenames.push_back(filename);
+        // 目录存在
+        std::vector<std::string> filenames = getFiles(directoryPath, ".stp");
+        // 对文件名进行排序
+        std::sort(filenames.begin(), filenames.end());
+        // 遍历文件名并修改
+        for (int i = 0; i < filenames.size(); ++i)
+        {
+            int num = i + 1;
+            std::string oldFilePath = filenames[i];
+            std::string newFilePath = filenames[i].substr(0, filenames[i].find_last_of('.')) + "-" \
+                + (num < 10 ? ("0" + std::to_string(num)) : std::to_string(num)) + getFileExtension(filenames[i]);
+            // 输出修改后的文件名
+            std::cout << "Old filename: " << filenames[i] << " --> New filename: " << newFilePath << std::endl;
+            // 修改文件名
+            auto ret = rename(oldFilePath.c_str(), newFilePath.c_str());
+            if (ret != 0)
+            {
+                std::cout << "Error renaming file: " << oldFilePath << std::endl;
             }
         }
     }
-    closedir(dir);
-
-    // 对文件名进行排序
-    std::sort(filenames.begin(), filenames.end());
-
-    // 遍历文件名并修改
-    for (int i = 0; i < filenames.size(); ++i)
+    else
     {
-        int num = i + 1;
-        std::string oldFilePath = directoryPath + "/" + filenames[i];
-        std::string newFilename = filenames[i].substr(0, filenames[i].find_last_of('.')) + "-" \
-            + (num < 10 ? ("0" + std::to_string(num)) : std::to_string(num)) + getFileExtension(filenames[i]);
-        std::string newFilePath = directoryPath + "/" + newFilename;
-        // 输出修改后的文件名
-        std::cout << "Old filename: " << filenames[i] << " --> New filename: " << newFilename << std::endl;
-        // 修改文件名
-        if (rename(oldFilePath.c_str(), newFilePath.c_str()) != 0)
-        {
-            std::cerr << "Error renaming file: " << filenames[i] << std::endl;
-        }
+        std::cout << "Path[" << directoryPath << "] not directory." << std::endl;
     }
 }
 
