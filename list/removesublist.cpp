@@ -7,78 +7,113 @@ struct ListNode {
     ListNode(int x) : val(x), next(nullptr) {}
 };
 
-ListNode* removeMultiplesOf10(ListNode* head) {
-    ListNode* dummy = new ListNode(0);
-    dummy->next = head;
-    ListNode* prev = dummy;
-    ListNode* current = head;
+ListNode* removeSublists(ListNode* head)
+{
+    ListNode* zeroNodePtr = new ListNode(0);
+    zeroNodePtr->next = head;
+    ListNode* prevPtr = zeroNodePtr;
+    ListNode* curPtr = head;
 
-    while (current != nullptr) {
+    while (curPtr != nullptr)
+    {
         int product = 1;
-        ListNode* temp = current;
+        ListNode* temp = curPtr;
         
         // 计算当前节点开始的连续节点的乘积
-        while (temp != nullptr) {
+        while (temp != nullptr)
+        {
             product *= temp->val;
-            if (product == 10) {
+            if (product == 10) 
+            {
                 break;
             }
             temp = temp->next;
         }
 
-        if (product == 10) {
-            // 删除连续节点
-            prev->next = temp->next;
-            current = temp->next;
-            delete temp;
-        } else {
-            prev = current;
-            current = current->next;
+        if (product == 10)
+        {
+            // 删除连续节点并更新list
+            ListNode* haltNodePtr = temp->next;
+            std::string delNumStr = "";
+            while (curPtr != haltNodePtr)
+            {
+                ListNode* delNodePtr = curPtr;
+                curPtr = curPtr->next;
+                if (delNumStr.length() <= 0)
+                {
+                    delNumStr = std::to_string(delNodePtr->val);
+                }
+                else
+                {
+                    delNumStr = delNumStr + "," + std::to_string(delNodePtr->val);
+                }
+                delete delNodePtr;
+            }
+            std::cout << "remove node val(s):" << delNumStr << std::endl;
+            // 将当前指针指向头部,重新遍历
+            prevPtr->next = curPtr;
+            prevPtr = zeroNodePtr;
+            curPtr = prevPtr->next;
+        } 
+        else
+        {
+            prevPtr = curPtr;
+            curPtr = curPtr->next;
         }
     }
 
-    ListNode* newHead = dummy->next;
-    delete dummy;
-    return newHead;
+    ListNode* newHeadPtr = zeroNodePtr->next;
+    delete zeroNodePtr;
+    return newHeadPtr;
 }
 
-void printList(ListNode* head) {
-    while (head != nullptr) {
+void printList(ListNode* head)
+{
+    while (head != nullptr)
+    {
         std::cout << head->val << " ";
         head = head->next;
     }
     std::cout << std::endl;
 }
 
-int main() {
+int main()
+{
     std::vector<int> values = {-2, 5, -1, -10, 1, -1, 10, 2, 2, 2, 5, 5};
 
-    // 构造链表
-    ListNode* head = nullptr;
-    ListNode* prev = nullptr;
-    for (int val : values) {
+    // 生成链表
+    ListNode* headNodePtr = nullptr;
+    ListNode* prevNodePtr = nullptr;
+    for (int val : values)
+    {
         ListNode* newNode = new ListNode(val);
-        if (head == nullptr) {
-            head = newNode;
-        } else {
-            prev->next = newNode;
+        if (headNodePtr == nullptr)
+        {
+            headNodePtr = newNode;
         }
-        prev = newNode;
+        else
+        {
+            // prenode的next指针指向当前node
+            prevNodePtr->next = newNode;
+        }
+        // 更新pre指向
+        prevNodePtr = newNode;
     }
 
     std::cout << "Original List: ";
-    printList(head);
+    printList(headNodePtr);
 
     // 删除总乘积值为 10 的连续节点组成的序列
-    head = removeMultiplesOf10(head);
+    headNodePtr = removeSublists(headNodePtr);
 
     std::cout << "Modified List: ";
-    printList(head);
+    printList(headNodePtr);
 
     // 释放内存
-    while (head != nullptr) {
-        ListNode* temp = head;
-        head = head->next;
+    while (headNodePtr != nullptr)
+    {
+        ListNode* temp = headNodePtr;
+        headNodePtr = headNodePtr->next;
         delete temp;
     }
 

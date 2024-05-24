@@ -34,8 +34,8 @@ std::vector<std::string> getFiles(std::string directoryPath, std::string extensi
     return fileList;
 }
 
-// 修改文件名
-void renameFiles(const std::string& directoryPath)
+// 检查目录内文件名并修改
+bool checkFile(const std::string& directoryPath)
 {
     struct stat fileInfo;
     if (fileInfo.st_mode & EISDIR)
@@ -58,13 +58,16 @@ void renameFiles(const std::string& directoryPath)
             if (ret != 0)
             {
                 std::cout << "Error renaming file: " << oldFilePath << std::endl;
+                return false;
             }
         }
     }
     else
     {
         std::cout << "Path[" << directoryPath << "] not directory." << std::endl;
+        return false;
     }
+    return true;
 }
 
 int main(int argc, char* argv[])
@@ -74,6 +77,9 @@ int main(int argc, char* argv[])
         return 1;
     }
     std::string directoryPath = argv[1];
-    renameFiles(directoryPath);
+    if(!checkFile(directoryPath))
+    {
+        std::cerr << "检查并修改目录内*.stp文件的文件名失败.目录:" << directoryPath << std::endl;
+    }
     return 0;
 }
